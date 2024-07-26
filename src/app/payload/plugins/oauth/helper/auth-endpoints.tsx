@@ -1,49 +1,13 @@
-import { SignJWT } from 'jose'
-import { CollectionConfig, Endpoint, generatePayloadCookie, getFieldsToSign } from 'payload'
+import { OAuthPluginTypes } from '../types'
+import { Endpoint, generatePayloadCookie, getFieldsToSign } from 'payload'
 import { Line, generateCodeVerifier, generateState } from 'arctic'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
 import jwt from 'jsonwebtoken'
-import { OAuthPluginTypes2 } from '../types'
-export const modifyAuthCollection = (
-  pluginOptions: OAuthPluginTypes2,
-  existingCollectionConfig: CollectionConfig,
-  subFieldName: string,
-) => {
-  // /////////////////////////////////////
-  // modify fields
-  // /////////////////////////////////////
-  const fields = existingCollectionConfig.fields || []
-  const existingSubField = fields.find((field) => 'name' in field && field.name === subFieldName)
-  if (!existingSubField) {
-    fields.push({
-      name: subFieldName,
-      type: 'text',
-      index: true,
-      access: {
-        read: () => true,
-        create: () => true,
-        update: () => false,
-      },
-    })
-  }
-
-  // /////////////////////////////////////
-  // modify endpoints
-  // /////////////////////////////////////
-  const endpoints = existingCollectionConfig.endpoints || []
-  endpoints.push(createAuthorizeEndpoint(pluginOptions))
-  endpoints.push(createCallbackEndpoint(pluginOptions))
-  return {
-    ...existingCollectionConfig,
-    endpoints,
-  }
-}
-
-const createAuthorizeEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => {
+export const createAuthorizeEndpoint = (pluginOptions: OAuthPluginTypes): Endpoint => {
   return {
     method: 'get',
-    path: pluginOptions.authorizePath || '/oauth/authorize',
+    path: pluginOptions.authorizePath,
     handler: async (req) => {
       const { email } = req.query
 
@@ -62,22 +26,18 @@ const createAuthorizeEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => 
       }
 
       const callbackUrl = `${pluginOptions.serverURL}/api/${pluginOptions.authCollection}${pluginOptions.callbackPath}`
-      const line = new Line(pluginOptions.clientId, pluginOptions.clientSecret, callbackUrl)
 
       const state = generateState()
       const codeVerifier = generateCodeVerifier()
-      const url = await line.createAuthorizationURL(state, codeVerifier, {
-        scopes: ['profile', 'email'],
-      })
 
-      cookies().set('line_oauth_state', state, {
+      cookies().set(`${pluginOptions.subFieldName}_state`, state, {
         path: '/',
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
         maxAge: 60 * 10,
         sameSite: 'lax',
       })
-      cookies().set('line_oauth_code_verifier', codeVerifier, {
+      cookies().set(`${pluginOptions.subFieldName}_verifier`, codeVerifier, {
         path: '/',
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
@@ -85,19 +45,28 @@ const createAuthorizeEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => 
         sameSite: 'lax',
       })
 
-      return Response.redirect(url)
+      return await getRedirectURL({
+        subfield: pluginOptions.subFieldName,
+        clientId: pluginOptions.clientId,
+        clientSecret: pluginOptions.clientSecret,
+        callbackUrl,
+        state,
+        codeVerifier,
+      })
     },
   }
 }
-const createCallbackEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => {
+
+export const createCallbackEndpoint = (pluginOptions: OAuthPluginTypes): Endpoint => {
   return {
     method: 'get',
-    path: pluginOptions.callbackPath || '/oauth/callback',
+    path: pluginOptions.callbackPath,
     handler: async (req) => {
       try {
         const { code, state }: { code?: string; state?: string } = req.query
-        const storedState = cookies().get('line_oauth_state')?.value ?? null
-        const storedCodeVerifier = cookies().get('line_oauth_code_verifier')?.value ?? null
+        const storedState = cookies().get(`${pluginOptions.subFieldName}_state`)?.value ?? null
+        const storedCodeVerifier =
+          cookies().get(`${pluginOptions.subFieldName}_verifier`)?.value ?? null
 
         if (!code || !state || !storedState || state !== storedState || !storedCodeVerifier) {
           throw new Error('Invalid state or code')
@@ -114,24 +83,22 @@ const createCallbackEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => {
         // /////////////////////////////////////
         // Not implemented
         // /////////////////////////////////////
-        // obtain access token
+        // obtain access token and user info
         // /////////////////////////////////////
         const callbackUrl = `${pluginOptions.serverURL}/api/${pluginOptions.authCollection}${pluginOptions.callbackPath}`
-        const line = new Line(pluginOptions.clientId, pluginOptions.clientSecret, callbackUrl)
 
-        const token = await line.validateAuthorizationCode(code, storedCodeVerifier)
-        // /////////////////////////////////////
-        // get user info
-        // /////////////////////////////////////
-        const lineUserResponse = await fetch('https://api.line.me/oauth2/v2.1/userinfo', {
-          headers: {
-            Authorization: `Bearer ${token.accessToken}`,
-          },
+        const {
+          sub,
+          displayName,
+          email: emailFromOauth,
+        } = await verifyAndGetProfile({
+          callbackUrl,
+          clientId: pluginOptions.clientId,
+          clientSecret: pluginOptions.clientSecret,
+          code,
+          storedCodeVerifier,
+          subfield: pluginOptions.subFieldName,
         })
-
-        if (!lineUserResponse.ok) throw new Error('Failed to get user info')
-
-        const lineUser: LineUser = await lineUserResponse.json()
 
         //search for existing user
 
@@ -139,17 +106,16 @@ const createCallbackEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => {
           req,
           collection: 'users',
           where: {
-            [subFieldName]: { equals: lineUser.sub },
+            [subFieldName]: { equals: sub },
           },
           limit: 1,
         })
         let user: any
         if (existingUser.docs.length === 0) {
           //get email from cookie
-          const email = cookies().get('payload_signup_email')?.value
+          const email = cookies().get('payload_signup_email')?.value ?? emailFromOauth
 
           if (!email) {
-            console.log('Email is required')
             //redirect to signup page
             return new Response(null, {
               headers: {
@@ -165,9 +131,9 @@ const createCallbackEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => {
             req,
             collection: 'users',
             data: {
-              [subFieldName]: lineUser.sub,
+              [subFieldName]: sub,
               email,
-              displayName: lineUser.name,
+              displayName,
               // Stuff breaks when password is missing
               password: makeid(32),
             },
@@ -175,7 +141,7 @@ const createCallbackEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => {
         } else {
           user = existingUser.docs[0]
         }
-        console.log({ user })
+
         // /////////////////////////////////////
         // beforeLogin - Collection
         // /////////////////////////////////////
@@ -189,7 +155,7 @@ const createCallbackEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => {
               user,
             })) || user
         }, Promise.resolve())
-        console.log('before login passed...')
+
         // /////////////////////////////////////
         // login - OAuth2
         // /////////////////////////////////////
@@ -198,7 +164,7 @@ const createCallbackEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => {
           email: user.email,
           user,
         })
-        const iat = Math.floor(Date.now() / 1000)
+        // const iat = Math.floor(Date.now() / 1000)
         const payloadToken = jwt.sign(fieldsToSign, req.payload.secret, {
           expiresIn: collectionConfig.auth.tokenExpiration,
         })
@@ -208,7 +174,6 @@ const createCallbackEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => {
         //   .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
         //   .sign(new TextEncoder().encode(req.payload.secret))
         req.user = user
-        console.log({ payloadToken })
 
         // /////////////////////////////////////
         // afterLogin - Collection
@@ -266,12 +231,6 @@ const createCallbackEndpoint = (pluginOptions: OAuthPluginTypes2): Endpoint => {
     },
   }
 }
-interface LineUser {
-  sub: string
-  name: string
-  picture: string
-  email?: string
-}
 
 function makeid(length: number) {
   let result = ''
@@ -285,13 +244,77 @@ function makeid(length: number) {
   return result
 }
 
-/*
-{
-  "id": 2,
-  "collection": "users",
-  "email": "kang-nakub@hotmail.com",
-  "exp": 7200,
-  "iat": 1721983184,
-  "nbf": 1721983184
+async function getRedirectURL({
+  subfield,
+  callbackUrl,
+  clientId,
+  clientSecret,
+  codeVerifier,
+  state,
+}: {
+  subfield: OAuthPluginTypes['subFieldName']
+  clientId: OAuthPluginTypes['clientId']
+  clientSecret: OAuthPluginTypes['clientSecret']
+  callbackUrl: string
+  state: string
+  codeVerifier: string
+}) {
+  if (subfield === 'lineLoginId') {
+    const line = new Line(clientId, clientSecret, callbackUrl)
+
+    const url = await line.createAuthorizationURL(state, codeVerifier, {
+      scopes: ['profile', 'email'],
+    })
+    return Response.redirect(url)
+  }
+  throw new Error('Invalid subfield')
 }
-*/
+
+async function verifyAndGetProfile({
+  subfield,
+  callbackUrl,
+  clientId,
+  clientSecret,
+  code,
+  storedCodeVerifier,
+}: {
+  subfield: OAuthPluginTypes['subFieldName']
+  clientId: OAuthPluginTypes['clientId']
+  clientSecret: OAuthPluginTypes['clientSecret']
+  callbackUrl: string
+  code: string
+  storedCodeVerifier: string
+}): Promise<{
+  sub: string
+  email?: string
+  displayName: string
+}> {
+  switch (subfield) {
+    case 'lineLoginId': {
+      const line = new Line(clientId, clientSecret, callbackUrl)
+      const token = await line.validateAuthorizationCode(code, storedCodeVerifier)
+      const lineUserResponse = await fetch('https://api.line.me/oauth2/v2.1/userinfo', {
+        headers: {
+          Authorization: `Bearer ${token.accessToken}`,
+        },
+      })
+
+      if (!lineUserResponse.ok) throw new Error('Failed to get user info')
+
+      const lineUser: LineUser = await lineUserResponse.json()
+      return {
+        sub: lineUser.sub,
+        email: lineUser.email,
+        displayName: lineUser.name,
+      }
+    }
+    default:
+      throw new Error('Invalid subfield')
+  }
+}
+interface LineUser {
+  sub: string
+  name: string
+  picture: string
+  email?: string
+}

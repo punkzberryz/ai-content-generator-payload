@@ -1,6 +1,20 @@
 import { PayloadRequest } from 'payload'
 
-export interface OAuthPluginTypes {
+export interface OAuthPluginTypes2 {
+  /**
+   * Enable or disable plugin
+   * @default false
+   */
+  enabled?: boolean
+
+  /**
+   * Use email as identity. If true, the user's email will be used as the
+   * single identity for the user. This allows users to log in with different
+   * OAuth providers using the same email.
+   * @default false
+   */
+  //   useEmailAsIdentity?: boolean
+
   /**
    * URL to the server. This is used to redirect users after login.
    * Must not have trailing slash.
@@ -17,9 +31,9 @@ export interface OAuthPluginTypes {
   /**
    * Field name in the auth collection where the OAuth provider's user ID will
    * be stored
-   * @example "googleId", "facebookId", "lineId"
+   * @default "sub"
    */
-  subFieldName: 'lineLoginId' | 'googleId' | 'githubId'
+  subFieldName?: string
 
   /**
    * Client ID for the OAuth provider
@@ -69,7 +83,7 @@ export interface OAuthPluginTypes {
    * Must start with a forward slash.
    * Must NOT have a trailing slash.
    * This path will have /api/<auth-collection-slug> prepended to it.
-   * @default "/oauth/authorize"
+   * @example "/oauth/authorize" or "/oauth/github"
    */
   authorizePath: string
 
@@ -78,7 +92,7 @@ export interface OAuthPluginTypes {
    * Must start with a forward slash.
    * Must NOT have a trailing slash.
    * This path will have /api/<auth-collection-slug> prepended to it.
-   * @default "/oauth/callback"
+   * @example "/oauth/callback" or "/oauth/github/callback
    */
   callbackPath: string
 

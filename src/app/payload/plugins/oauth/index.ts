@@ -1,13 +1,11 @@
-import { Plugin } from 'payload'
-import { modifyAuthCollection } from './helper/modify-auth-collection'
-import { OAuthPluginTypes2 } from './types'
+import { Config, Plugin } from 'payload'
+import { OAuthPluginTypes } from './types'
+import { modifyAuthCollection } from '../helper/modify-auth-collection'
+
 export const OAuthPlugin =
-  (pluginOptions: OAuthPluginTypes2): Plugin =>
+  (pluginOptions: OAuthPluginTypes): Plugin =>
   (incomingConfig) => {
     let config = { ...incomingConfig }
-    if (!pluginOptions.enabled) {
-      return config
-    }
 
     // /////////////////////////////////////
     // Modify admin panel
@@ -31,7 +29,7 @@ export const OAuthPlugin =
     // /////////////////////////////////////
 
     const authCollectionSlug = pluginOptions.authCollection || 'users'
-    const subFieldName = pluginOptions.subFieldName || 'sub'
+    const subFieldName = pluginOptions.subFieldName
     const authCollection = config.collections?.find(
       (collection) => collection.slug === authCollectionSlug,
     )
