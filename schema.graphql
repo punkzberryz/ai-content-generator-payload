@@ -1,27 +1,33 @@
 type Query {
-  User(id: String!, draft: Boolean): User
+  User(id: Int!, draft: Boolean): User
   Users(draft: Boolean, where: User_where, limit: Int, page: Int, sort: String): Users
   countUsers(draft: Boolean, where: User_where): countUsers
-  docAccessUser(id: String!): usersDocAccess
+  docAccessUser(id: Int!): usersDocAccess
   meUser: usersMe
   initializedUser: Boolean
-  Page(id: String!, draft: Boolean): Page
+  AiOutput(id: Int!, draft: Boolean): AiOutput
+  AiOutputs(draft: Boolean, where: AiOutput_where, limit: Int, page: Int, sort: String): AiOutputs
+  countAiOutputs(draft: Boolean, where: AiOutput_where): countAiOutputs
+  docAccessAiOutput(id: Int!): ai_outputDocAccess
+  Page(id: Int!, draft: Boolean): Page
   Pages(draft: Boolean, where: Page_where, limit: Int, page: Int, sort: String): Pages
   countPages(draft: Boolean, where: Page_where): countPages
-  docAccessPage(id: String!): pagesDocAccess
-  Media(id: String!, draft: Boolean): Media
+  docAccessPage(id: Int!): pagesDocAccess
+  Media(id: Int!, draft: Boolean): Media
   allMedia(draft: Boolean, where: Media_where, limit: Int, page: Int, sort: String): allMedia
   countallMedia(draft: Boolean, where: Media_where): countallMedia
-  docAccessMedia(id: String!): mediaDocAccess
-  PayloadPreference(id: String!, draft: Boolean): PayloadPreference
+  docAccessMedia(id: Int!): mediaDocAccess
+  PayloadPreference(id: Int!, draft: Boolean): PayloadPreference
   PayloadPreferences(draft: Boolean, where: PayloadPreference_where, limit: Int, page: Int, sort: String): PayloadPreferences
   countPayloadPreferences(draft: Boolean, where: PayloadPreference_where): countPayloadPreferences
-  docAccessPayloadPreference(id: String!): payload_preferencesDocAccess
+  docAccessPayloadPreference(id: Int!): payload_preferencesDocAccess
   Access: Access
 }
 
 type User {
-  id: String
+  id: Int
+  role: User_role
+  displayName: String!
   updatedAt: DateTime
   createdAt: DateTime
   email: EmailAddress!
@@ -32,6 +38,11 @@ type User {
   loginAttempts: Float
   lockUntil: DateTime
   password: String!
+}
+
+enum User_role {
+  admin
+  user
 }
 
 """
@@ -59,12 +70,38 @@ type Users {
 }
 
 input User_where {
+  role: User_role_operator
+  displayName: User_displayName_operator
   updatedAt: User_updatedAt_operator
   createdAt: User_createdAt_operator
   email: User_email_operator
   id: User_id_operator
   AND: [User_where_and]
   OR: [User_where_or]
+}
+
+input User_role_operator {
+  equals: User_role_Input
+  not_equals: User_role_Input
+  in: [User_role_Input]
+  not_in: [User_role_Input]
+  all: [User_role_Input]
+  exists: Boolean
+}
+
+enum User_role_Input {
+  admin
+  user
+}
+
+input User_displayName_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  in: [String]
+  not_in: [String]
+  all: [String]
 }
 
 input User_updatedAt_operator {
@@ -100,17 +137,18 @@ input User_email_operator {
 }
 
 input User_id_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  in: [String]
-  not_in: [String]
-  all: [String]
+  equals: Int
+  not_equals: Int
+  greater_than_equal: Int
+  greater_than: Int
+  less_than_equal: Int
+  less_than: Int
   exists: Boolean
 }
 
 input User_where_and {
+  role: User_role_operator
+  displayName: User_displayName_operator
   updatedAt: User_updatedAt_operator
   createdAt: User_createdAt_operator
   email: User_email_operator
@@ -120,6 +158,8 @@ input User_where_and {
 }
 
 input User_where_or {
+  role: User_role_operator
+  displayName: User_displayName_operator
   updatedAt: User_updatedAt_operator
   createdAt: User_createdAt_operator
   email: User_email_operator
@@ -142,10 +182,58 @@ type usersDocAccess {
 }
 
 type UsersDocAccessFields {
+  role: UsersDocAccessFields_role
+  displayName: UsersDocAccessFields_displayName
   updatedAt: UsersDocAccessFields_updatedAt
   createdAt: UsersDocAccessFields_createdAt
   email: UsersDocAccessFields_email
   password: UsersDocAccessFields_password
+}
+
+type UsersDocAccessFields_role {
+  create: UsersDocAccessFields_role_Create
+  read: UsersDocAccessFields_role_Read
+  update: UsersDocAccessFields_role_Update
+  delete: UsersDocAccessFields_role_Delete
+}
+
+type UsersDocAccessFields_role_Create {
+  permission: Boolean!
+}
+
+type UsersDocAccessFields_role_Read {
+  permission: Boolean!
+}
+
+type UsersDocAccessFields_role_Update {
+  permission: Boolean!
+}
+
+type UsersDocAccessFields_role_Delete {
+  permission: Boolean!
+}
+
+type UsersDocAccessFields_displayName {
+  create: UsersDocAccessFields_displayName_Create
+  read: UsersDocAccessFields_displayName_Read
+  update: UsersDocAccessFields_displayName_Update
+  delete: UsersDocAccessFields_displayName_Delete
+}
+
+type UsersDocAccessFields_displayName_Create {
+  permission: Boolean!
+}
+
+type UsersDocAccessFields_displayName_Read {
+  permission: Boolean!
+}
+
+type UsersDocAccessFields_displayName_Update {
+  permission: Boolean!
+}
+
+type UsersDocAccessFields_displayName_Delete {
+  permission: Boolean!
 }
 
 type UsersDocAccessFields_updatedAt {
@@ -273,14 +361,17 @@ type UsersUnlockDocAccess {
 type usersMe {
   collection: String
   exp: Int
+  strategy: String
   token: String
   user: User
 }
 
-type Page {
-  id: String
-  title: String
-  content(depth: Int): JSON
+type AiOutput {
+  id: Int
+  prompt: String!
+  output(depth: Int): JSON
+  templateSlug: String!
+  createdBy: User
   updatedAt: DateTime
   createdAt: DateTime
 }
@@ -289,6 +380,312 @@ type Page {
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
 """
 scalar JSON @specifiedBy(url: "http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf")
+
+type AiOutputs {
+  docs: [AiOutput]
+  hasNextPage: Boolean
+  hasPrevPage: Boolean
+  limit: Int
+  nextPage: Int
+  offset: Int
+  page: Int
+  pagingCounter: Int
+  prevPage: Int
+  totalDocs: Int
+  totalPages: Int
+}
+
+input AiOutput_where {
+  prompt: AiOutput_prompt_operator
+  output: AiOutput_output_operator
+  templateSlug: AiOutput_templateSlug_operator
+  createdBy: AiOutput_createdBy_operator
+  updatedAt: AiOutput_updatedAt_operator
+  createdAt: AiOutput_createdAt_operator
+  id: AiOutput_id_operator
+  AND: [AiOutput_where_and]
+  OR: [AiOutput_where_or]
+}
+
+input AiOutput_prompt_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  in: [String]
+  not_in: [String]
+  all: [String]
+}
+
+input AiOutput_output_operator {
+  equals: JSON
+  not_equals: JSON
+  like: JSON
+  contains: JSON
+  exists: Boolean
+}
+
+input AiOutput_templateSlug_operator {
+  equals: String
+  not_equals: String
+  like: String
+  contains: String
+  in: [String]
+  not_in: [String]
+  all: [String]
+}
+
+input AiOutput_createdBy_operator {
+  equals: JSON
+  not_equals: JSON
+  in: [JSON]
+  not_in: [JSON]
+  all: [JSON]
+  exists: Boolean
+}
+
+input AiOutput_updatedAt_operator {
+  equals: DateTime
+  not_equals: DateTime
+  greater_than_equal: DateTime
+  greater_than: DateTime
+  less_than_equal: DateTime
+  less_than: DateTime
+  like: DateTime
+  exists: Boolean
+}
+
+input AiOutput_createdAt_operator {
+  equals: DateTime
+  not_equals: DateTime
+  greater_than_equal: DateTime
+  greater_than: DateTime
+  less_than_equal: DateTime
+  less_than: DateTime
+  like: DateTime
+  exists: Boolean
+}
+
+input AiOutput_id_operator {
+  equals: Int
+  not_equals: Int
+  greater_than_equal: Int
+  greater_than: Int
+  less_than_equal: Int
+  less_than: Int
+  exists: Boolean
+}
+
+input AiOutput_where_and {
+  prompt: AiOutput_prompt_operator
+  output: AiOutput_output_operator
+  templateSlug: AiOutput_templateSlug_operator
+  createdBy: AiOutput_createdBy_operator
+  updatedAt: AiOutput_updatedAt_operator
+  createdAt: AiOutput_createdAt_operator
+  id: AiOutput_id_operator
+  AND: [AiOutput_where_and]
+  OR: [AiOutput_where_or]
+}
+
+input AiOutput_where_or {
+  prompt: AiOutput_prompt_operator
+  output: AiOutput_output_operator
+  templateSlug: AiOutput_templateSlug_operator
+  createdBy: AiOutput_createdBy_operator
+  updatedAt: AiOutput_updatedAt_operator
+  createdAt: AiOutput_createdAt_operator
+  id: AiOutput_id_operator
+  AND: [AiOutput_where_and]
+  OR: [AiOutput_where_or]
+}
+
+type countAiOutputs {
+  totalDocs: Int
+}
+
+type ai_outputDocAccess {
+  fields: AiOutputDocAccessFields
+  create: AiOutputCreateDocAccess
+  read: AiOutputReadDocAccess
+  update: AiOutputUpdateDocAccess
+  delete: AiOutputDeleteDocAccess
+}
+
+type AiOutputDocAccessFields {
+  prompt: AiOutputDocAccessFields_prompt
+  output: AiOutputDocAccessFields_output
+  templateSlug: AiOutputDocAccessFields_templateSlug
+  createdBy: AiOutputDocAccessFields_createdBy
+  updatedAt: AiOutputDocAccessFields_updatedAt
+  createdAt: AiOutputDocAccessFields_createdAt
+}
+
+type AiOutputDocAccessFields_prompt {
+  create: AiOutputDocAccessFields_prompt_Create
+  read: AiOutputDocAccessFields_prompt_Read
+  update: AiOutputDocAccessFields_prompt_Update
+  delete: AiOutputDocAccessFields_prompt_Delete
+}
+
+type AiOutputDocAccessFields_prompt_Create {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_prompt_Read {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_prompt_Update {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_prompt_Delete {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_output {
+  create: AiOutputDocAccessFields_output_Create
+  read: AiOutputDocAccessFields_output_Read
+  update: AiOutputDocAccessFields_output_Update
+  delete: AiOutputDocAccessFields_output_Delete
+}
+
+type AiOutputDocAccessFields_output_Create {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_output_Read {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_output_Update {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_output_Delete {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_templateSlug {
+  create: AiOutputDocAccessFields_templateSlug_Create
+  read: AiOutputDocAccessFields_templateSlug_Read
+  update: AiOutputDocAccessFields_templateSlug_Update
+  delete: AiOutputDocAccessFields_templateSlug_Delete
+}
+
+type AiOutputDocAccessFields_templateSlug_Create {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_templateSlug_Read {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_templateSlug_Update {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_templateSlug_Delete {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_createdBy {
+  create: AiOutputDocAccessFields_createdBy_Create
+  read: AiOutputDocAccessFields_createdBy_Read
+  update: AiOutputDocAccessFields_createdBy_Update
+  delete: AiOutputDocAccessFields_createdBy_Delete
+}
+
+type AiOutputDocAccessFields_createdBy_Create {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_createdBy_Read {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_createdBy_Update {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_createdBy_Delete {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_updatedAt {
+  create: AiOutputDocAccessFields_updatedAt_Create
+  read: AiOutputDocAccessFields_updatedAt_Read
+  update: AiOutputDocAccessFields_updatedAt_Update
+  delete: AiOutputDocAccessFields_updatedAt_Delete
+}
+
+type AiOutputDocAccessFields_updatedAt_Create {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_updatedAt_Read {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_updatedAt_Update {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_updatedAt_Delete {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_createdAt {
+  create: AiOutputDocAccessFields_createdAt_Create
+  read: AiOutputDocAccessFields_createdAt_Read
+  update: AiOutputDocAccessFields_createdAt_Update
+  delete: AiOutputDocAccessFields_createdAt_Delete
+}
+
+type AiOutputDocAccessFields_createdAt_Create {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_createdAt_Read {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_createdAt_Update {
+  permission: Boolean!
+}
+
+type AiOutputDocAccessFields_createdAt_Delete {
+  permission: Boolean!
+}
+
+type AiOutputCreateDocAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type AiOutputReadDocAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type AiOutputUpdateDocAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type AiOutputDeleteDocAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type Page {
+  id: Int
+  title: String
+  content(depth: Int): JSON
+  updatedAt: DateTime
+  createdAt: DateTime
+}
 
 type Pages {
   docs: [Page]
@@ -356,13 +753,12 @@ input Page_createdAt_operator {
 }
 
 input Page_id_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  in: [String]
-  not_in: [String]
-  all: [String]
+  equals: Int
+  not_equals: Int
+  greater_than_equal: Int
+  greater_than: Int
+  less_than_equal: Int
+  less_than: Int
   exists: Boolean
 }
 
@@ -518,7 +914,7 @@ type PagesDeleteDocAccess {
 }
 
 type Media {
-  id: String
+  id: Int
   text: String
   updatedAt: DateTime
   createdAt: DateTime
@@ -693,13 +1089,12 @@ input Media_focalY_operator {
 }
 
 input Media_id_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  in: [String]
-  not_in: [String]
-  all: [String]
+  equals: Int
+  not_equals: Int
+  greater_than_equal: Int
+  greater_than: Int
+  less_than_equal: Int
+  less_than: Int
   exists: Boolean
 }
 
@@ -1063,7 +1458,7 @@ type MediaDeleteDocAccess {
 }
 
 type PayloadPreference {
-  id: String
+  id: Int
   user: PayloadPreference_User_Relationship!
   key: String
   value: JSON
@@ -1160,13 +1555,12 @@ input PayloadPreference_createdAt_operator {
 }
 
 input PayloadPreference_id_operator {
-  equals: String
-  not_equals: String
-  like: String
-  contains: String
-  in: [String]
-  not_in: [String]
-  all: [String]
+  equals: Int
+  not_equals: Int
+  greater_than_equal: Int
+  greater_than: Int
+  less_than_equal: Int
+  less_than: Int
   exists: Boolean
 }
 
@@ -1350,6 +1744,7 @@ type PayloadPreferencesDeleteDocAccess {
 type Access {
   canAccessAdmin: Boolean!
   users: usersAccess
+  ai_output: ai_outputAccess
   pages: pagesAccess
   media: mediaAccess
   payload_preferences: payload_preferencesAccess
@@ -1365,10 +1760,58 @@ type usersAccess {
 }
 
 type UsersFields {
+  role: UsersFields_role
+  displayName: UsersFields_displayName
   updatedAt: UsersFields_updatedAt
   createdAt: UsersFields_createdAt
   email: UsersFields_email
   password: UsersFields_password
+}
+
+type UsersFields_role {
+  create: UsersFields_role_Create
+  read: UsersFields_role_Read
+  update: UsersFields_role_Update
+  delete: UsersFields_role_Delete
+}
+
+type UsersFields_role_Create {
+  permission: Boolean!
+}
+
+type UsersFields_role_Read {
+  permission: Boolean!
+}
+
+type UsersFields_role_Update {
+  permission: Boolean!
+}
+
+type UsersFields_role_Delete {
+  permission: Boolean!
+}
+
+type UsersFields_displayName {
+  create: UsersFields_displayName_Create
+  read: UsersFields_displayName_Read
+  update: UsersFields_displayName_Update
+  delete: UsersFields_displayName_Delete
+}
+
+type UsersFields_displayName_Create {
+  permission: Boolean!
+}
+
+type UsersFields_displayName_Read {
+  permission: Boolean!
+}
+
+type UsersFields_displayName_Update {
+  permission: Boolean!
+}
+
+type UsersFields_displayName_Delete {
+  permission: Boolean!
 }
 
 type UsersFields_updatedAt {
@@ -1484,6 +1927,181 @@ type UsersDeleteAccess {
 }
 
 type UsersUnlockAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type ai_outputAccess {
+  fields: AiOutputFields
+  create: AiOutputCreateAccess
+  read: AiOutputReadAccess
+  update: AiOutputUpdateAccess
+  delete: AiOutputDeleteAccess
+}
+
+type AiOutputFields {
+  prompt: AiOutputFields_prompt
+  output: AiOutputFields_output
+  templateSlug: AiOutputFields_templateSlug
+  createdBy: AiOutputFields_createdBy
+  updatedAt: AiOutputFields_updatedAt
+  createdAt: AiOutputFields_createdAt
+}
+
+type AiOutputFields_prompt {
+  create: AiOutputFields_prompt_Create
+  read: AiOutputFields_prompt_Read
+  update: AiOutputFields_prompt_Update
+  delete: AiOutputFields_prompt_Delete
+}
+
+type AiOutputFields_prompt_Create {
+  permission: Boolean!
+}
+
+type AiOutputFields_prompt_Read {
+  permission: Boolean!
+}
+
+type AiOutputFields_prompt_Update {
+  permission: Boolean!
+}
+
+type AiOutputFields_prompt_Delete {
+  permission: Boolean!
+}
+
+type AiOutputFields_output {
+  create: AiOutputFields_output_Create
+  read: AiOutputFields_output_Read
+  update: AiOutputFields_output_Update
+  delete: AiOutputFields_output_Delete
+}
+
+type AiOutputFields_output_Create {
+  permission: Boolean!
+}
+
+type AiOutputFields_output_Read {
+  permission: Boolean!
+}
+
+type AiOutputFields_output_Update {
+  permission: Boolean!
+}
+
+type AiOutputFields_output_Delete {
+  permission: Boolean!
+}
+
+type AiOutputFields_templateSlug {
+  create: AiOutputFields_templateSlug_Create
+  read: AiOutputFields_templateSlug_Read
+  update: AiOutputFields_templateSlug_Update
+  delete: AiOutputFields_templateSlug_Delete
+}
+
+type AiOutputFields_templateSlug_Create {
+  permission: Boolean!
+}
+
+type AiOutputFields_templateSlug_Read {
+  permission: Boolean!
+}
+
+type AiOutputFields_templateSlug_Update {
+  permission: Boolean!
+}
+
+type AiOutputFields_templateSlug_Delete {
+  permission: Boolean!
+}
+
+type AiOutputFields_createdBy {
+  create: AiOutputFields_createdBy_Create
+  read: AiOutputFields_createdBy_Read
+  update: AiOutputFields_createdBy_Update
+  delete: AiOutputFields_createdBy_Delete
+}
+
+type AiOutputFields_createdBy_Create {
+  permission: Boolean!
+}
+
+type AiOutputFields_createdBy_Read {
+  permission: Boolean!
+}
+
+type AiOutputFields_createdBy_Update {
+  permission: Boolean!
+}
+
+type AiOutputFields_createdBy_Delete {
+  permission: Boolean!
+}
+
+type AiOutputFields_updatedAt {
+  create: AiOutputFields_updatedAt_Create
+  read: AiOutputFields_updatedAt_Read
+  update: AiOutputFields_updatedAt_Update
+  delete: AiOutputFields_updatedAt_Delete
+}
+
+type AiOutputFields_updatedAt_Create {
+  permission: Boolean!
+}
+
+type AiOutputFields_updatedAt_Read {
+  permission: Boolean!
+}
+
+type AiOutputFields_updatedAt_Update {
+  permission: Boolean!
+}
+
+type AiOutputFields_updatedAt_Delete {
+  permission: Boolean!
+}
+
+type AiOutputFields_createdAt {
+  create: AiOutputFields_createdAt_Create
+  read: AiOutputFields_createdAt_Read
+  update: AiOutputFields_createdAt_Update
+  delete: AiOutputFields_createdAt_Delete
+}
+
+type AiOutputFields_createdAt_Create {
+  permission: Boolean!
+}
+
+type AiOutputFields_createdAt_Read {
+  permission: Boolean!
+}
+
+type AiOutputFields_createdAt_Update {
+  permission: Boolean!
+}
+
+type AiOutputFields_createdAt_Delete {
+  permission: Boolean!
+}
+
+type AiOutputCreateAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type AiOutputReadAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type AiOutputUpdateAccess {
+  permission: Boolean!
+  where: JSONObject
+}
+
+type AiOutputDeleteAccess {
   permission: Boolean!
   where: JSONObject
 }
@@ -2087,29 +2705,35 @@ type PayloadPreferencesDeleteAccess {
 
 type Mutation {
   createUser(data: mutationUserInput!, draft: Boolean): User
-  updateUser(id: String!, autosave: Boolean, data: mutationUserUpdateInput!, draft: Boolean): User
-  deleteUser(id: String!): User
-  refreshTokenUser(token: String): usersRefreshedUser
+  updateUser(id: Int!, autosave: Boolean, data: mutationUserUpdateInput!, draft: Boolean): User
+  deleteUser(id: Int!): User
+  refreshTokenUser: usersRefreshedUser
   logoutUser: String
   unlockUser(email: String!): Boolean!
-  loginUser(email: String, password: String): usersLoginResult
-  forgotPasswordUser(disableEmail: Boolean, email: String!, expiration: Int): Boolean!
+  loginUser(email: String!, password: String): usersLoginResult
+  forgotPasswordUser(disableEmail: Boolean, expiration: Int, email: String!): Boolean!
   resetPasswordUser(password: String, token: String): usersResetPassword
   verifyEmailUser(token: String): Boolean
+  createAiOutput(data: mutationAiOutputInput!, draft: Boolean): AiOutput
+  updateAiOutput(id: Int!, autosave: Boolean, data: mutationAiOutputUpdateInput!, draft: Boolean): AiOutput
+  deleteAiOutput(id: Int!): AiOutput
+  duplicateAiOutput(id: Int!): AiOutput
   createPage(data: mutationPageInput!, draft: Boolean): Page
-  updatePage(id: String!, autosave: Boolean, data: mutationPageUpdateInput!, draft: Boolean): Page
-  deletePage(id: String!): Page
-  duplicatePage(id: String!): Page
+  updatePage(id: Int!, autosave: Boolean, data: mutationPageUpdateInput!, draft: Boolean): Page
+  deletePage(id: Int!): Page
+  duplicatePage(id: Int!): Page
   createMedia(data: mutationMediaInput!, draft: Boolean): Media
-  updateMedia(id: String!, autosave: Boolean, data: mutationMediaUpdateInput!, draft: Boolean): Media
-  deleteMedia(id: String!): Media
+  updateMedia(id: Int!, autosave: Boolean, data: mutationMediaUpdateInput!, draft: Boolean): Media
+  deleteMedia(id: Int!): Media
   createPayloadPreference(data: mutationPayloadPreferenceInput!, draft: Boolean): PayloadPreference
-  updatePayloadPreference(id: String!, autosave: Boolean, data: mutationPayloadPreferenceUpdateInput!, draft: Boolean): PayloadPreference
-  deletePayloadPreference(id: String!): PayloadPreference
-  duplicatePayloadPreference(id: String!): PayloadPreference
+  updatePayloadPreference(id: Int!, autosave: Boolean, data: mutationPayloadPreferenceUpdateInput!, draft: Boolean): PayloadPreference
+  deletePayloadPreference(id: Int!): PayloadPreference
+  duplicatePayloadPreference(id: Int!): PayloadPreference
 }
 
 input mutationUserInput {
+  role: User_role_MutationInput
+  displayName: String!
   updatedAt: String
   createdAt: String
   email: String!
@@ -2122,7 +2746,14 @@ input mutationUserInput {
   password: String!
 }
 
+enum User_role_MutationInput {
+  admin
+  user
+}
+
 input mutationUserUpdateInput {
+  role: UserUpdate_role_MutationInput
+  displayName: String
   updatedAt: String
   createdAt: String
   email: String
@@ -2135,9 +2766,15 @@ input mutationUserUpdateInput {
   password: String
 }
 
+enum UserUpdate_role_MutationInput {
+  admin
+  user
+}
+
 type usersRefreshedUser {
   exp: Int
   refreshedToken: String
+  strategy: String
   user: usersJWT
 }
 
@@ -2155,6 +2792,24 @@ type usersLoginResult {
 type usersResetPassword {
   token: String
   user: User
+}
+
+input mutationAiOutputInput {
+  prompt: String!
+  output: JSON
+  templateSlug: String!
+  createdBy: Int
+  updatedAt: String
+  createdAt: String
+}
+
+input mutationAiOutputUpdateInput {
+  prompt: String
+  output: JSON
+  templateSlug: String
+  createdBy: Int
+  updatedAt: String
+  createdAt: String
 }
 
 input mutationPageInput {

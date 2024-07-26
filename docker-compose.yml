@@ -1,0 +1,18 @@
+version: '3.9'
+name: papai-clinic
+services:
+  postgres:
+    image: postgres:16.3-alpine3.20
+    ports:
+      - '${DB_PORT}:${DB_PORT}'
+    volumes:
+      - ./pg-db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    restart: always
+    container_name: ${DB_DOCKER_CONTAINER}
+
+volumes:
+  pg-db:

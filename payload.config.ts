@@ -1,6 +1,7 @@
 import path from 'path'
-// import { postgresAdapter } from '@payloadcms/db-postgres'
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { en } from 'payload/i18n/en'
+import { th } from 'payload/i18n/th'
 import {
   AlignFeature,
   BlockquoteFeature,
@@ -20,11 +21,14 @@ import {
   UploadFeature,
 } from '@payloadcms/richtext-lexical'
 //import { slateEditor } from '@payloadcms/richtext-slate'
-import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
-
+import { Users } from '@/app/payload/collections/users'
+import { AiOutputCollection } from '@/app/payload/collections/ai-output'
+import { OAuth2Plugin } from 'payload-oauth2'
+import { OAuthGoogleLoginButton, OAuthLineLoginButton } from '@/components/oauth'
+import { OAuthPlugin } from '@/app/payload/plugins/my-first-plugin'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
@@ -32,15 +36,8 @@ export default buildConfig({
   //editor: slateEditor({}),
   editor: lexicalEditor(),
   collections: [
-    {
-      slug: 'users',
-      auth: true,
-      access: {
-        delete: () => false,
-        update: () => false,
-      },
-      fields: [],
-    },
+    Users,
+    AiOutputCollection,
     {
       slug: 'pages',
       admin: {
@@ -72,13 +69,10 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  // db: postgresAdapter({
-  //   pool: {
-  //     connectionString: process.env.POSTGRES_URI || ''
-  //   }
-  // }),
-  db: mongooseAdapter({
-    url: process.env.MONGODB_URI || '',
+  db: postgresAdapter({
+    pool: {
+      connectionString: process.env.POSTGRES_URI || '',
+    },
   }),
 
   /**
@@ -86,7 +80,7 @@ export default buildConfig({
    * This is completely optional and will default to English if not provided
    */
   i18n: {
-    supportedLanguages: { en },
+    supportedLanguages: { en, th },
   },
 
   admin: {
@@ -108,6 +102,7 @@ export default buildConfig({
         data: {
           email: 'dev@payloadcms.com',
           password: 'test',
+          displayName: 'Admin',
         },
       })
     }
@@ -119,4 +114,20 @@ export default buildConfig({
   // This is temporary - we may make an adapter pattern
   // for this before reaching 3.0 stable
   sharp,
+  cookiePrefix: 'ai-content',
+  plugins: [
+    OAuthPlugin({
+      enabled: true,
+      serverURL: process.env.NEXT_PUBLIC_URL || 'http://localhost:3000',
+      clientId: process.env.LINE_CLIENT_ID || '',
+      clientSecret: process.env.LINE_CLIENT_SECRET || '',
+      failureRedirect: () => '/',
+      successRedirect: () => '/admin',
+      authCollection: 'users',
+      authorizePath: '/oauth/line',
+      callbackPath: '/oauth/line/callback',
+      OAuthLoginButton: OAuthLineLoginButton,
+      subFieldName: 'lineLoginId',
+    }),
+  ],
 })
