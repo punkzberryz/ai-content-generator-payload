@@ -18,3 +18,6 @@ db-migrate-status:
 # check the status of migrations and output a table of which
 # migrations have been run, and which migrations have not yet run.
 	pnpm run payload migrate:status
+db-migrate-fresh:
+#Drops all entities from the database and re-runs all migrations from scratch.
+	pnpm run payload migrate:fresh

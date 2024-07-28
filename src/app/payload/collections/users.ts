@@ -1,7 +1,13 @@
 import { CollectionConfig } from 'payload'
+import { isAdmin, isMeOrAdmin } from '../helper'
 
 export const Users: CollectionConfig = {
   slug: 'users',
+  access: {
+    read: isMeOrAdmin,
+    update: isMeOrAdmin,
+    delete: isMeOrAdmin,
+  },
   fields: [
     {
       name: 'role',
@@ -17,6 +23,7 @@ export const Users: CollectionConfig = {
         },
       ],
       defaultValue: 'user',
+      saveToJWT: true,
     },
     {
       name: 'email',

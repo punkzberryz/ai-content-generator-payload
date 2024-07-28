@@ -1,5 +1,4 @@
 import payloadConfig from '@payload-config'
-import { getPayload } from 'payload'
-import { cache } from 'react'
+import { getPayloadHMR } from '@payloadcms/next/utilities'
 
-export const apiPromise = cache(() => getPayload({ config: payloadConfig }))
+export const apiPromise = getPayloadHMR({ config: payloadConfig })

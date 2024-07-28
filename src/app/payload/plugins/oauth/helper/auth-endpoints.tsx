@@ -1,6 +1,6 @@
 import { OAuthPluginTypes } from '../types'
 import { Endpoint, generatePayloadCookie, getFieldsToSign } from 'payload'
-import { Line, generateCodeVerifier, generateState } from 'arctic'
+import { GitHub, Google, Line, generateCodeVerifier, generateState } from 'arctic'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
 import jwt from 'jsonwebtoken'
@@ -74,7 +74,7 @@ export const createCallbackEndpoint = (pluginOptions: OAuthPluginTypes): Endpoin
         // /////////////////////////////////////
         // shorthands
         // /////////////////////////////////////
-        const subFieldName = pluginOptions.subFieldName || 'sub'
+        const subFieldName = pluginOptions.subFieldName
         const authCollection = pluginOptions.authCollection || 'users'
         const collectionConfig = req.payload.collections[authCollection].config
 
@@ -259,15 +259,31 @@ async function getRedirectURL({
   state: string
   codeVerifier: string
 }) {
-  if (subfield === 'lineLoginId') {
-    const line = new Line(clientId, clientSecret, callbackUrl)
-
-    const url = await line.createAuthorizationURL(state, codeVerifier, {
-      scopes: ['profile', 'email'],
-    })
-    return Response.redirect(url)
+  switch (subfield) {
+    case 'lineLoginId': {
+      const line = new Line(clientId, clientSecret, callbackUrl)
+      const url = await line.createAuthorizationURL(state, codeVerifier, {
+        scopes: ['profile', 'email'],
+      })
+      return Response.redirect(url)
+    }
+    case 'githubId': {
+      const github = new GitHub(clientId, clientSecret, {
+        redirectURI: callbackUrl,
+      })
+      const url = await github.createAuthorizationURL(state)
+      return Response.redirect(url)
+    }
+    case 'googleId': {
+      const google = new Google(clientId, clientSecret, callbackUrl)
+      const url = await google.createAuthorizationURL(state, codeVerifier, {
+        scopes: ['openid', 'email', 'profile'],
+      })
+      return Response.redirect(url)
+    }
+    default:
+      throw new Error('Invalid subfield')
   }
-  throw new Error('Invalid subfield')
 }
 
 async function verifyAndGetProfile({
@@ -308,6 +324,35 @@ async function verifyAndGetProfile({
         displayName: lineUser.name,
       }
     }
+    case 'githubId': {
+      const github = new GitHub(clientId, clientSecret, { redirectURI: callbackUrl })
+      const token = await github.validateAuthorizationCode(code)
+      const githubUserResponse = await fetch('https://api.github.com/user', {
+        headers: {
+          Authorization: `Bearer ${token.accessToken}`,
+        },
+      })
+      const githubUser: GitHubUser = await githubUserResponse.json()
+      return {
+        sub: githubUser.id.toString(),
+        displayName: githubUser.login,
+      }
+    }
+    case 'googleId': {
+      const google = new Google(clientId, clientSecret, callbackUrl)
+      const token = await google.validateAuthorizationCode(code, storedCodeVerifier)
+      const googleUserResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          Authorization: `Bearer ${token.accessToken}`,
+        },
+      })
+      const googleUser: GoogleUser = await googleUserResponse.json()
+      return {
+        sub: googleUser.sub,
+        email: googleUser.email,
+        displayName: googleUser.name,
+      }
+    }
     default:
       throw new Error('Invalid subfield')
   }
@@ -317,4 +362,16 @@ interface LineUser {
   name: string
   picture: string
   email?: string
+}
+interface GitHubUser {
+  id: number
+  login: string
+}
+interface GoogleUser {
+  sub: string
+  name: string
+  given_name: string
+  picture: string
+  email: string
+  email_verified: boolean
 }

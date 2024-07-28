@@ -1,6 +1,6 @@
 import { Config, Plugin } from 'payload'
 import { OAuthPluginTypes } from './types'
-import { modifyAuthCollection } from '../helper/modify-auth-collection'
+import { modifyAuthCollection } from './helper/modify-auth-collection'
 
 export const OAuthPlugin =
   (pluginOptions: OAuthPluginTypes): Plugin =>

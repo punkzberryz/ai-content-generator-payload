@@ -2,7 +2,12 @@ import Link from 'next/link'
 import { FetchUser } from '../components/fetch-user'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { SignInForm } from './components/signin-form'
-import { OAuthGoogleLoginButton, OAuthLineLoginButton, TestButton } from '@/components/oauth'
+import {
+  OAuthGoogleLoginButton,
+  OAuthLineLoginButton,
+  TestButton,
+  TestButton2,
+} from '@/components/oauth'
 import { OAuthLineLoginButton2 } from '@/components/oauth/line-signup-button'
 const SignInPage = () => {
   return (
@@ -26,6 +31,7 @@ const SignInPage = () => {
           <OAuthGoogleLoginButton />
           {/* <OAuthLineLoginButton /> */}
           <TestButton />
+          <TestButton2 />
         </CardContent>
       </Card>
     </div>

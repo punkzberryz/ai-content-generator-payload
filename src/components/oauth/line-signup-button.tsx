@@ -1,17 +1,17 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '../ui/input'
+
 export const OAuthLineLoginButton2 = () => {
   const handleSubmit = () => {
     const email = inputRef.current?.value
@@ -20,12 +20,11 @@ export const OAuthLineLoginButton2 = () => {
     }
   }
   const inputRef = useRef<HTMLInputElement>(null)
-  const [mounted, setMounted] = useState(false)
-  if (!mounted) return null
+
   return (
     <Dialog>
-      <DialogTrigger>
-        <Button asChild> Line Login</Button>
+      <DialogTrigger asChild>
+        <Button>Line Login</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

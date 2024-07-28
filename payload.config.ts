@@ -26,9 +26,7 @@ import sharp from 'sharp'
 import { fileURLToPath } from 'url'
 import { Users } from '@/app/payload/collections/users'
 import { AiOutputCollection } from '@/app/payload/collections/ai-output'
-import { OAuth2Plugin } from 'payload-oauth2'
-import { OAuthGoogleLoginButton, OAuthLineLoginButton } from '@/components/oauth'
-import { OAuthPlugin } from '@/app/payload/plugins/my-first-plugin'
+import { OAuthPlugin } from '@/app/payload/plugins/oauth'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
@@ -103,6 +101,7 @@ export default buildConfig({
           email: 'dev@payloadcms.com',
           password: 'test',
           displayName: 'Admin',
+          role: 'admin',
         },
       })
     }
@@ -117,17 +116,52 @@ export default buildConfig({
   cookiePrefix: 'ai-content',
   plugins: [
     OAuthPlugin({
-      enabled: true,
+      subFieldName: 'lineLoginId',
+      authCollection: 'users',
       serverURL: process.env.NEXT_PUBLIC_URL || 'http://localhost:3000',
       clientId: process.env.LINE_CLIENT_ID || '',
       clientSecret: process.env.LINE_CLIENT_SECRET || '',
-      failureRedirect: () => '/',
-      successRedirect: () => '/admin',
-      authCollection: 'users',
       authorizePath: '/oauth/line',
       callbackPath: '/oauth/line/callback',
-      OAuthLoginButton: OAuthLineLoginButton,
-      subFieldName: 'lineLoginId',
+      // OAuthLoginButton: OAuthLineLoginButton,
+      failureRedirect: (req, error) => {
+        return '/'
+      },
+      successRedirect: async (req) => {
+        return '/auth/signin'
+      },
+    }),
+    OAuthPlugin({
+      subFieldName: 'githubId',
+      authCollection: 'users',
+      serverURL: process.env.NEXT_PUBLIC_URL || 'http://localhost:3000',
+      clientId: process.env.GITHUB_CLIENT_ID || '',
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+      authorizePath: '/oauth/github',
+      callbackPath: '/oauth/github/callback',
+      // OAuthLoginButton: OAuthLineLoginButton,
+      failureRedirect: (req, error) => {
+        return '/'
+      },
+      successRedirect: async (req) => {
+        return '/auth/signin'
+      },
+    }),
+    OAuthPlugin({
+      subFieldName: 'googleId',
+      authCollection: 'users',
+      serverURL: process.env.NEXT_PUBLIC_URL || 'http://localhost:3000',
+      clientId: process.env.GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      authorizePath: '/oauth/google',
+      callbackPath: '/oauth/google/callback',
+      // OAuthLoginButton: OAuthLineLoginButton,
+      failureRedirect: (req, error) => {
+        return '/'
+      },
+      successRedirect: async (req) => {
+        return '/auth/signin'
+      },
     }),
   ],
 })

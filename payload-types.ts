@@ -79,6 +79,8 @@ export interface User {
   role?: ('admin' | 'user') | null;
   displayName: string;
   lineLoginId?: string | null;
+  githubId?: string | null;
+  googleId?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
