@@ -16,7 +16,7 @@ export const AiOutputCollection: CollectionConfig = {
     },
     {
       name: 'output',
-      type: 'richText',
+      type: 'text',
     },
     {
       name: 'templateSlug',

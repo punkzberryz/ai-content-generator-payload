@@ -1,4 +1,30 @@
-export const TEMPLATE = [
+export interface TemplateType {
+  name: string
+  desc: string
+  category: string
+  icon: string
+  slug: string
+  aiPrompt: string
+  form: FieldType[]
+}
+interface FieldType {
+  label: string
+  field: 'textarea' | 'input'
+  name:
+    | 'niche'
+    | 'outline'
+    | 'topic'
+    | 'keywords'
+    | 'title'
+    | 'article'
+    | 'textToImprove'
+    | 'inputText'
+    | 'codeDesscripton'
+    | 'codeInput'
+    | 'productName'
+  required?: boolean
+}
+export const TEMPLATE: TemplateType[] = [
   {
     name: 'Blog Title',
     desc: 'An AI tool that generate blog title depends on yout blog information',

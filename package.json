@@ -20,6 +20,7 @@
     "node": "^18.20.2 || >=20.9.0"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.16.0",
     "@hookform/resolvers": "^3.9.0",
     "@payloadcms/db-mongodb": "3.0.0-beta.67",
     "@payloadcms/db-postgres": "3.0.0-beta.67",
@@ -32,6 +33,7 @@
     "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.2",
+    "@toast-ui/react-editor": "^3.2.3",
     "arctic": "^1.9.2",
     "autoprefixer": "^10.4.19",
     "babel-plugin-react-compiler": "^0.0.0-experimental-592953e-20240517",

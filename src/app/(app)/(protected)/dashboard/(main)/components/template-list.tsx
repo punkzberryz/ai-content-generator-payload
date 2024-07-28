@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { TEMPLATE } from './TEMPLATE'
+import { TEMPLATE, TemplateType } from './TEMPLATE'
 import { useSearchTemplateStore } from './use-search-template-store'
 
 export const TemplateList = () => {
@@ -24,22 +24,8 @@ export const TemplateList = () => {
     </>
   )
 }
-export interface TemplateProps {
-  name: string
-  desc: string
-  icon: string
-  category: string
-  slug: string
-  aiPrompt: string
-  form?: FormProps[]
-}
-export interface FormProps {
-  label: string
-  field: string
-  name: string
-  required?: boolean
-}
-const TemplateCard = ({ slug, icon, name, desc }: TemplateProps) => {
+
+const TemplateCard = ({ slug, icon, name, desc }: TemplateType) => {
   return (
     <Link href={'/dashboard/content/' + slug}>
       <div className="flex cursor-pointer flex-col gap-3 rounded-md border bg-white p-5 shadow-md transition-all hover:scale-105">

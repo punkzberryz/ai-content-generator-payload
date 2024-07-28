@@ -33,36 +33,7 @@ const dirname = path.dirname(filename)
 export default buildConfig({
   //editor: slateEditor({}),
   editor: lexicalEditor(),
-  collections: [
-    Users,
-    AiOutputCollection,
-    {
-      slug: 'pages',
-      admin: {
-        useAsTitle: 'title',
-      },
-      fields: [
-        {
-          name: 'title',
-          type: 'text',
-        },
-        {
-          name: 'content',
-          type: 'richText',
-        },
-      ],
-    },
-    {
-      slug: 'media',
-      upload: true,
-      fields: [
-        {
-          name: 'text',
-          type: 'text',
-        },
-      ],
-    },
-  ],
+  collections: [Users, AiOutputCollection],
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
